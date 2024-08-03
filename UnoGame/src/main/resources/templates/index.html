@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Uno Game</title>
+    <style>
+        .card {
+            border: 1px solid black;
+            padding: 10px;
+            margin: 5px;
+            display: inline-block;
+            width: 60px;
+            height: 100px;
+            text-align: center;
+            vertical-align: top;
+        }
+        .hand {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Uno Game</h1>
+    <div id="status"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            updateGameStatus();
+        });
+
+        function updateGameStatus() {
+            fetch('/api/game/status')
+                .then(response => response.json())
+                .then(game => {
+                    if (!game.players) {
+                        console.error("Game status response does not contain 'players'");
+                        return;
+                    }
+                    const statusDiv = document.getElementById('status');
+                    statusDiv.innerHTML = '';
+                    game.players.forEach(player => {
+                        const playerDiv = document.createElement('div');
+                        playerDiv.innerHTML = `<h2>${player.name}</h2>`;
+                        const handDiv = document.createElement('div');
+                        handDiv.className = 'hand';
+                        player.hand.forEach((card, index) => {
+                            const cardDiv = document.createElement('div');
+                            cardDiv.className = 'card';
+                            cardDiv.innerHTML = `${card.color} ${card.number} ${card.action}`;
+                            cardDiv.onclick = () => playCard(player.name, index);
+                            handDiv.appendChild(cardDiv);
+                        });
+                        playerDiv.appendChild(handDiv);
+                        statusDiv.appendChild(playerDiv);
+                    });
+                }).catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+        function playCard(playerName, cardIndex) {
+            fetch(`/api/game/playCard?playerName=${playerName}&cardIndex=${cardIndex}`, {
+                method: 'POST'
+            }).then(response => {
+                if (response.ok) {
+                    updateGameStatus();
+                } else {
+                    alert('Failed to play card');
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        setInterval(updateGameStatus, 5000); // Update game status every 5 seconds
+    </script>
+</body>
+</html>
